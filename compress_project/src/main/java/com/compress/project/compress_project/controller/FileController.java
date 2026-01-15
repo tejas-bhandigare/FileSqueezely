@@ -5,9 +5,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
+
 
     @PostMapping("/upload")
     public String uploadFile(@RequestParam("file") MultipartFile file) {
