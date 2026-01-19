@@ -2,61 +2,66 @@ import React, { useState } from "react";
 
 function App() {
 
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [files, setFiles] = useState([]);
 
-  const handleFileSelect = (event) => {
-    setSelectedFiles(event.target.files);
+  const handleSelect = (e) => {
+    setFiles(e.target.files);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFiles || selectedFiles.length === 0) {
-      alert("No files selected");
+  const handleMerge = async () => {
+
+    if (!files || files.length < 2) {
+      alert("Please select at least 2 PDF files");
       return;
     }
 
     const formData = new FormData();
-
-    for (let i = 0; i < selectedFiles.length; i++) {
-      formData.append("files", selectedFiles[i]);
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
     }
 
-    try {
-      const response = await fetch(
-        "http://localhost:8080/api/files/upload-multiple",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+    const response = await fetch(
+      "http://localhost:8080/api/files/merge-pdf",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
-      const result = await response.text();
-      alert(result);
-
-    } catch (error) {
-      console.error(error);
-      alert("Upload failed");
+    if (!response.ok) {
+      alert("PDF merge failed");
+      return;
     }
+
+    // Receive binary PDF
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    // Trigger download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "merged.pdf";
+    a.click();
+
+    window.URL.revokeObjectURL(url);
   };
 
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
-      <h2>Multiple File Upload</h2>
+    <div style={{ padding: "40px" }}>
+      <h2>PDF Merge</h2>
 
       <input
         type="file"
         multiple
-        onChange={handleFileSelect}
+        accept="application/pdf"
+        onChange={handleSelect}
       />
 
       <br /><br />
 
-      <button onClick={handleUpload}>
-        Upload Files
+      <button onClick={handleMerge}>
+        Merge & Download
       </button>
-
-      <p style={{ marginTop: "10px", color: "#555" }}>
-        Select multiple files together, then click Upload.
-      </p>
     </div>
   );
 }
