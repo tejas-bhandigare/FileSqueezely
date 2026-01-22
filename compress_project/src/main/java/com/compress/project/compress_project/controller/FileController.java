@@ -1,5 +1,6 @@
 package com.compress.project.compress_project.controller;
 
+import net.coobird.thumbnailator.Thumbnails;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -16,9 +17,7 @@ import java.io.File;
 @RequestMapping("/api/files")
 public class FileController {
 
-    /* -------------------------------------------------
-       1️⃣ SINGLE FILE UPLOAD
-       ------------------------------------------------- */
+    /* SINGLE FILE UPLOAD */
     @PostMapping("/upload")
     public String uploadSingle(@RequestParam("file") MultipartFile file) {
 
@@ -41,9 +40,7 @@ public class FileController {
         }
     }
 
-    /* -------------------------------------------------
-       2️⃣ MULTIPLE FILE UPLOAD
-       ------------------------------------------------- */
+    /* MULTIPLE FILE UPLOAD */
     @PostMapping("/upload-multiple")
     public String uploadMultiple(@RequestParam("files") MultipartFile[] files) {
 
@@ -70,9 +67,7 @@ public class FileController {
         }
     }
 
-    /* -------------------------------------------------
-       3️⃣ PDF MERGE (DAY-5 CORE FEATURE)
-       ------------------------------------------------- */
+    /* PDF MERGE */
     @PostMapping("/merge-pdf")
     public ResponseEntity<byte[]> mergePdf(@RequestParam("files") MultipartFile[] files) {
 
@@ -95,7 +90,10 @@ public class FileController {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "merged.pdf");
+            headers.setContentDispositionFormData(
+                    "attachment",
+                    "merged.pdf"
+            );
 
             return new ResponseEntity<>(mergedPdf, headers, HttpStatus.OK);
 
@@ -104,4 +102,42 @@ public class FileController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    /* IMAGE COMPRESSION */
+    
+    @PostMapping("/compress-image")
+    public ResponseEntity<byte[]> compressImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "0.6") double quality) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+            // Compress image in memory
+            Thumbnails.of(file.getInputStream())
+                    .scale(1.0)              // keep original dimensions
+                    .outputQuality(quality)  // compression level
+                    .toOutputStream(outputStream);
+
+            byte[] compressedImage = outputStream.toByteArray();
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData(
+                    "attachment",
+                    "compressed_" + file.getOriginalFilename()
+            );
+
+            return new ResponseEntity<>(compressedImage, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
+
